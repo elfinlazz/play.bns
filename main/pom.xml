@@ -30,7 +30,7 @@
   <packaging>pom</packaging>
 
   <groupId>play.bns</groupId>
-  <artifactId>core</artifactId>
+  <artifactId>main</artifactId>
   <version>0.1</version>
 
   <name>${project.artifactId}-${project.version}</name>
@@ -78,9 +78,9 @@
       <version>2.0.0</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-math3</artifactId>
-      <version>3.0</version>
+      <groupId>hexlab</groupId>
+      <artifactId>morf</artifactId>
+      <version>0.1</version>
     </dependency>
   </dependencies>
   <modules>
