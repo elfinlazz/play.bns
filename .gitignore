@@ -1,0 +1,9 @@
+/.idea
+/authserver/target
+/authserver/authserver.iml
+/gameserver/target
+/gameserver/gameserver.iml
+/lobbyserver/target
+/lobbyserver/lobbyserver.iml
+/core/target
+/core/core.iml
