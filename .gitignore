@@ -5,5 +5,5 @@
 /gameserver/gameserver.iml
 /lobbyserver/target
 /lobbyserver/lobbyserver.iml
-/core/target
-/core/core.iml
+/main/target
+/main/main.iml

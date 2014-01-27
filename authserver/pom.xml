@@ -31,9 +31,9 @@
 
   <parent>
     <groupId>play.bns</groupId>
-    <artifactId>core</artifactId>
+    <artifactId>main</artifactId>
     <version>0.1</version>
-    <relativePath>../core/pom.xml</relativePath>
+    <relativePath>../main/pom.xml</relativePath>
   </parent>
   <name>${project.artifactId}-${project.version}</name>
 
