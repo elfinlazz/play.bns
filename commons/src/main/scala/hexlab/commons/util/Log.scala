@@ -20,15 +20,16 @@
  *                           All rights reserved
  */
 
-package bns
+package hexlab.commons.util
+
+import org.slf4j.LoggerFactory
+import scala.reflect.ClassTag
 
 /**
- * This class is an GameServer entry point
+ * This class ...
  *
  * @author hex1r0
  */
-object GameServer {
-  def main(args: Array[String]) {
-
-  }
+object Log {
+  def apply[T: ClassTag] = LoggerFactory.getLogger(GenericsClass[T])
 }

@@ -20,15 +20,57 @@
  *                           All rights reserved
  */
 
-package bns
+package hexlab.commons.util
 
 /**
- * This class is an GameServer entry point
+ * This class ...
  *
  * @author hex1r0
  */
-object GameServer {
-  def main(args: Array[String]) {
+trait BinaryReader {
+  protected def readByte: Byte
 
-  }
+  protected def readShort: Short
+
+  protected def readInt: Int
+
+  protected def readLong: Long
+
+  protected def readFloat: Float
+
+  protected def readDouble: Double
+
+  protected def readBytes(count: Int): Array[Byte]
+
+  protected def readBytes(out: Array[Byte])
+
+  protected def skip(count: Int)
+
+
+  protected def int8 = readByte
+
+  protected def int16 = readShort
+
+  protected def int32 = readInt
+
+  protected def int64 = readLong
+
+  protected def float32 = readFloat
+
+  protected def float64 = readDouble
+
+
+  protected def readC = readByte
+
+  protected def readH = readShort
+
+  protected def readD = readInt
+
+  protected def readQ = readLong
+
+  protected def readF = readFloat
+
+  protected def readDF = readDouble
+
+  protected def read(count: Int) = readBytes(count)
 }

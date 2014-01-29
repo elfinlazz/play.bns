@@ -20,15 +20,57 @@
  *                           All rights reserved
  */
 
-package bns
+package hexlab.commons.util
+
+import java.util
 
 /**
- * This class is an GameServer entry point
+ * This class ...
  *
  * @author hex1r0
  */
-object GameServer {
-  def main(args: Array[String]) {
+class UidRegistry(capacity: Int) {
+  private val _ids = new util.BitSet()
+  _ids.set(0)
 
+  private var _nextMinUid = 1
+
+  def acquire() = {
+    var uid = 0
+    if (_nextMinUid == capacity) {
+      uid = capacity
+    } else {
+      uid = _ids.nextClearBit(_nextMinUid)
+    }
+
+    if (uid == capacity) {
+      throw new IllegalStateException
+    }
+
+    _nextMinUid = uid + 1
+    _ids.set(uid)
+    
+    uid
+  }
+
+  def release(uid: Int) = {
+    val status = _ids.get(uid)
+    if (!status) {
+      throw new IllegalStateException
+    }
+
+    _ids.clear(uid)
+    if (uid < _nextMinUid || _nextMinUid == capacity) {
+      _nextMinUid = uid
+    }
+  }
+
+  def lock(id: Int) {
+    val status = _ids.get(id)
+    if (status) {
+      throw new IllegalStateException
+    }
+
+    _ids.set(id)
   }
 }

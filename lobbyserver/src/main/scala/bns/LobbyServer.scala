@@ -1,5 +1,5 @@
 /*
- * This file is part of Play.BnS project.
+ * This file is part of PlayBnS
  *                      <https://github.com/HeXLaB/play.bns>
  *
  * This program is free software; you can redistribute it and/or modify

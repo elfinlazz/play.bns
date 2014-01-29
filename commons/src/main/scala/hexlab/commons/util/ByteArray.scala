@@ -20,15 +20,38 @@
  *                           All rights reserved
  */
 
-package bns
+package hexlab.commons.util
 
 /**
- * This class is an GameServer entry point
+ * This class ...
  *
  * @author hex1r0
  */
-object GameServer {
-  def main(args: Array[String]) {
+object ByteArray {
+  type ByteArray = Array[Byte]
 
+  def apply(length: Int) = {
+    new Array[Byte](length)
   }
+
+  def apply(hex: String) = {
+    HexUtil.fromHex(hex)
+  }
+
+  // TODO
+  //    def apply(bytes: Seq[Int]) = {
+  //
+  //    }
+
+  def fromHex(hex: String) = {
+    HexUtil.fromHex(hex)
+  }
+
+  implicit class ByteArrayObjectExt(obj: Array.type) {
+    def fromHex(hex: String) = {
+      ByteArray.fromHex(hex)
+    }
+  }
+
 }
+

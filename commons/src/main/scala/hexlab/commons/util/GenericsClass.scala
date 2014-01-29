@@ -20,15 +20,15 @@
  *                           All rights reserved
  */
 
-package bns
+package hexlab.commons.util
+
+import scala.reflect._
 
 /**
- * This class is an GameServer entry point
+ * This class ...
  *
  * @author hex1r0
  */
-object GameServer {
-  def main(args: Array[String]) {
-
-  }
+object GenericsClass {
+  def apply[T: ClassTag] = classTag[T].runtimeClass
 }

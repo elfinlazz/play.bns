@@ -20,15 +20,38 @@
  *                           All rights reserved
  */
 
-package bns
+package hexlab.commons.crypto
+
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
+import java.util
 
 /**
- * This class is an GameServer entry point
+ * This class implements AES Cipher
  *
  * @author hex1r0
  */
-object GameServer {
-  def main(args: Array[String]) {
+class AESCipher(key: Array[Byte]) {
+  private val _enc = init(Cipher.ENCRYPT_MODE)
+  private val _dec = init(Cipher.DECRYPT_MODE)
 
+  def encode(data: Array[Byte]) = {
+    var input = data
+    if (data.length % 16 != 0) {
+      val paddedLength = data.length + 16 - (data.length % 16)
+      input = util.Arrays.copyOf(data, paddedLength)
+    }
+
+    _enc.doFinal(input)
+  }
+
+  def decode(data: Array[Byte]) = _dec.doFinal(data)
+
+  private def init(mode: Int) = {
+    val keySpec = new SecretKeySpec(key, "AES")
+    val cipher = Cipher.getInstance("AES/ECB/NoPadding")
+    cipher.init(mode, keySpec)
+    cipher
   }
 }
+

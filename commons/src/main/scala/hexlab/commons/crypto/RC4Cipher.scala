@@ -20,15 +20,17 @@
  *                           All rights reserved
  */
 
-package bns
+package hexlab.commons.crypto
 
 /**
- * This class is an GameServer entry point
+ * This class implements RC4 Cipher
  *
  * @author hex1r0
  */
-object GameServer {
-  def main(args: Array[String]) {
+class RC4Cipher(key: Array[Byte]) {
+  private val _enc = new RC4(key)
+  private val _dec = new RC4(key)
 
-  }
+  def encode(data: Array[Byte]) = _enc.process(data)
+  def decode(data: Array[Byte]) = _dec.process(data)
 }

@@ -20,15 +20,22 @@
  *                           All rights reserved
  */
 
-package bns
+package hexlab.commons.util
 
 /**
- * This class is an GameServer entry point
- *
  * @author hex1r0
  */
-object GameServer {
-  def main(args: Array[String]) {
+object Sys {
 
+  def nanos: Long = System.nanoTime
+  def millis: Long = System.currentTimeMillis
+  def seconds: Int = (System.currentTimeMillis / 1000).toInt
+
+  def sizeof[T: Numeric](n: T) = n match {
+    case _: Byte => 1
+    case _: Short => 2
+    case _: Int => 4
+    case _: Long => 8
   }
+
 }
