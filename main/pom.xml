@@ -77,13 +77,9 @@
       <artifactId>slick_2.10</artifactId>
       <version>2.0.0</version>
     </dependency>
-    <dependency>
-      <groupId>hexlab</groupId>
-      <artifactId>morf</artifactId>
-      <version>0.1</version>
-    </dependency>
   </dependencies>
   <modules>
+    <module>../commons</module>
     <module>../authserver</module>
     <module>../lobbyserver</module>
     <module>../gameserver</module>
