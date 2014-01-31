@@ -48,8 +48,8 @@ object MessageExecutor {
   case class RequestObj(message: Any, onSuccess: SuccessFunc[Any], onError: FailureFunc)
   case class RequestSucceed(result: AnyRef, onSuccess: (AnyRef) => Unit)
   case class RequestFailed(e: Throwable, onFailure: (Throwable) => Unit)
-  case class ScheduleTask(task: Task)
-  case class ScheduleTaskWithId(taskId: TaskId, task: TaskWithId)
+  case class RunScheduledTask(task: Task)
+  case class RunScheduledTaskWithId(taskId: TaskId, task: TaskWithId)
 
   trait MessageHandler {
 
@@ -108,25 +108,22 @@ object MessageExecutor {
     }
 
     private implicit def task2Runnable(t: Task): Runnable = new Runnable {
-      def run(): Unit = executor ! ScheduleTask(t)
+      def run(): Unit = executor ! RunScheduledTask(t)
     }
 
     private implicit def taskWithId2Runnable(t: (TaskId, TaskWithId)): Runnable = new Runnable {
-      def run(): Unit = executor ! ScheduleTaskWithId(t._1, t._2)
+      def run(): Unit = executor ! RunScheduledTaskWithId(t._1, t._2)
     }
   }
 
   private[MessageExecutor] object UnhandledMessageHandler extends MessageHandler {
-    private val _log = Log[Executor]
-
     val actorSystem = null
     val executor = ActorRef.noSender
     val scheduler: ScheduledExecutorService = null
 
     def unhandledMessage(m: AnyRef) {
-      _log.warn("Unhandled message = " + m.getClass)
+      Log[UnhandledMessageHandler.type].warn("Unhandled message = " + m.getClass)
     }
-    
   }
 
   private def defaultOnFailure(e: Throwable) {
@@ -145,6 +142,17 @@ class MessageExecutor extends Actor {
     case RequestSucceed(result, func) => func(result)
     case RequestFailed(e, func) => func(e)
     case SubscribeFunc(clazz, instance, func) => _handlers += clazz ->(instance, func)
+    case RunScheduledTask(task) =>
+      try task()
+      catch {
+        case e: Throwable => defaultOnFailure(e)
+      }
+
+    case RunScheduledTaskWithId(taskId, task) =>
+      try task(taskId)
+      catch {
+        case e: Throwable => defaultOnFailure(e)
+      }
 
     case RequestObj(m, onSuccess, onError) =>
       val (handler, func) = _handlers.getOrElse(m.getClass, _unhandled)
