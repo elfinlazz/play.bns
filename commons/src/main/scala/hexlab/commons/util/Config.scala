@@ -20,11 +20,10 @@
  *                           All rights reserved
  */
 
-package hexlab.commons.config
+package hexlab.commons.util
 
 import scala.annotation.StaticAnnotation
 import scala.reflect.runtime.{universe => ru}
-import hexlab.commons.util.Reflection
 import com.typesafe.config.{ConfigFactory => TSConfigFactory}
 import scala.reflect.ClassTag
 
@@ -38,7 +37,7 @@ case class Config(path: String) extends StaticAnnotation
 case class ConfigProperty(path: String, default: String /* = ""*/) extends StaticAnnotation
 
 object Config {
-  def apply[T: ClassTag](m: ru.Mirror, clazz: Class[T]):Option[T] = {
+  def apply[T: ClassTag](m: ru.Mirror, clazz: Class[T]): Option[T] = {
     for (configAnnotation <- Reflection.findClassAnnotation[Config](m, clazz)) yield {
       val props = Reflection.findAnnotatedClassFields[ConfigProperty](m, clazz)
       if (props.isEmpty) return None
