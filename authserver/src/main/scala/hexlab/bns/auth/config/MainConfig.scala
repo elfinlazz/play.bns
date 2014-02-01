@@ -23,6 +23,7 @@
 package hexlab.bns.auth.config
 
 import hexlab.commons.util.{ConfigProperty, Config}
+import java.net.InetAddress
 
 /**
  * This class ...
@@ -31,27 +32,38 @@ import hexlab.commons.util.{ConfigProperty, Config}
  */
 @Config("main.conf")
 class MainConfig {
-  @ConfigProperty("authserver.network.client.host", "0.0.0.0")
-  var CLIENT_HOST: String = _
+  @ConfigProperty("authserver.network.client.host",
+    "0.0.0.0",
+    "Host that will be used to listen for client connections")
+  var CLIENT_HOST: InetAddress = _
 
-  @ConfigProperty("authserver.network.client.port", "6600")
+  @ConfigProperty("authserver.network.client.port",
+    6600,
+    "Port that will be used to listen for client connections")
   var CLIENT_PORT: Int = _
 
-  @ConfigProperty("authserver.network.lobby.host", "0.0.0.0")
-  var LOBBY_HOST: String = _
+  @ConfigProperty("authserver.network.lobby.host",
+    "0.0.0.0",
+    "Host that will be used to listen for lobby server connections")
+  var LOBBY_HOST: InetAddress = _
 
-  @ConfigProperty("authserver.network.lobby.port", "9001")
+  @ConfigProperty("authserver.network.lobby.port", 9001,
+    "Port that will be used to listen for lobby server connections")
   var LOBBY_PORT: Int = _
 
-  @ConfigProperty("authserver.database.driver", "com.mysql.jdbc.Driver")
+  @ConfigProperty("authserver.database.driver",
+    "com.mysql.jdbc.Driver",
+    "Database driver")
   var DATABASE_DRIVER: String = _
 
-  @ConfigProperty("authserver.database.url", "jdbc:mysq://127.0.0.1:3306/playbns?useUnicode=true&characterEncoding=UTF-8")
+  @ConfigProperty("authserver.database.url",
+    "jdbc:mysq://127.0.0.1:3306/playbns?useUnicode=true&characterEncoding=UTF-8",
+    "Database connection URL")
   var DATABASE_URL: String = _
 
-  @ConfigProperty("authserver.database.user", "root")
+  @ConfigProperty("authserver.database.user", "root", "Database user")
   var DATABASE_USER: String = _
 
-  @ConfigProperty("authserver.database.password", "1")
+  @ConfigProperty("authserver.database.password", "1", "Database password")
   var DATABASE_PWD: String = _
 }

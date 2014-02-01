@@ -38,4 +38,9 @@ object ConfigFactory {
 
     all.flatten
   }
+
+  def createAllFrom(root: String, parent: Class[_], packageName: String) = {
+    val m = scala.reflect.runtime.universe.runtimeMirror(ConfigFactory.getClass.getClassLoader)
+    parsePackage(parent, packageName).map(clazz => Config.create(root, m, clazz)).toList
+  }
 }

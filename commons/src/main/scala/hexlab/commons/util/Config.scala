@@ -22,11 +22,13 @@
 
 package hexlab.commons.util
 
+import hexlab.config.{ConfigFactory => CF, ConfigRenderOptions => CRO, ConfigValueFactory => CVF}
+import java.io.{FileWriter, File}
+import java.net.InetAddress
+import java.util
 import scala.annotation.StaticAnnotation
-import scala.reflect.runtime.universe._
-import com.typesafe.config.{ConfigFactory => TSConfigFactory}
 import scala.reflect.ClassTag
-import java.io.File
+import scala.reflect.runtime.universe._
 
 /**
  * This is set of classes for configuration support
@@ -35,7 +37,10 @@ import java.io.File
  */
 case class Config(path: String) extends StaticAnnotation
 
-case class ConfigProperty(path: String, default: String /* = ""*/) extends StaticAnnotation
+// TODO implement multiline comments
+// TODO implement default 'default'
+// TODO implement default comment
+case class ConfigProperty(path: String, default: Any /* = ""*/ , comment: String /* = List[String]*/) extends StaticAnnotation
 
 object Config {
   private val _log = Log[Config.type]
@@ -57,7 +62,7 @@ object Config {
       if (configFile.isFile && configFile.exists()) {
         _log.info(s"Loading config `$configPath`")
 
-        val config = TSConfigFactory.parseFile(configFile)
+        val config = CF.parseFile(configFile)
         fields.foreach {
           case (annot, prop) =>
             val propPath = annot.path
@@ -65,14 +70,49 @@ object Config {
             else bindValue(prop, annot.default)
         }
       } else {
-        _log.info(s"Loading unexisting config `$configPath` failed")
+        _log.info(s"Loading unexisting config `$configPath` failed. Using default values.")
+        fields.foreach {
+          case (annot, prop) =>
+            bindValue(prop, annot.default)
+        }
       }
       instance
     }
   }
 
-  private def bindValue(f: FieldMirror, value0: String) {
-    implicit val value = value0
+  def create(root: String, m: Mirror, clazz: Class[_]) {
+    for (configAnnotation <- Reflection.findClassAnnotation[Config](m, clazz)) yield {
+      val props = Reflection.findAnnotatedClassFields[ConfigProperty](m, clazz)
+      if (props.isEmpty) return
+
+
+      var conf = CF.empty()
+      for (p <- props.map(_._1)) {
+        conf = conf.withValue(p.path, CVF.fromAnyRefWithComments(p.default, util.Arrays.asList(p.comment)))
+      }
+
+      val renderOpts = CRO.defaults()
+        .setOriginComments(false)
+        .setComments(true)
+        .setJson(false)
+
+      val res = conf.root().render(renderOpts)
+
+      val configPath = root + "/" + configAnnotation.path
+      val configFile = new File(configPath)
+      if (configFile.isFile && configFile.exists()) {
+        _log.info(s"Skipping existing config `$configPath`")
+        // TODO
+      } else {
+        configFile.createNewFile()
+        new FileWriter(configFile).append(res).flush()
+        _log.info(s"Created config `$configPath`")
+      }
+    }
+  }
+
+  private def bindValue(f: FieldMirror, value0: Any) {
+    implicit val value = value0.toString
     val tn = f.symbol.typeSignature.toString
 
     def numeric[R](f: (String) => R)(implicit d: String): R = if (d == "") f("0") else f(d)
@@ -91,6 +131,7 @@ object Config {
       case "Float" => numeric(_.toFloat)
       case "Double" => numeric(_.toDouble)
       case "String" => value
+      case "java.net.InetAddress" => InetAddress.getByName(value)
       case _ => throw new NotImplementedError(tn + " is not supported yet")
     })
   }

@@ -22,12 +22,12 @@
 
 package hexlab.commons.util
 
-import scala.reflect.runtime.universe._
-import java.util.jar.JarInputStream
 import java.io.{File, IOException, FileInputStream}
-import scala.collection.mutable.ArrayBuffer
+import java.util.jar.JarInputStream
 import scala.Predef._
 import scala.Some
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect.runtime.universe._
 
 /**
  * This class provides simplified look on Scala Reflection
