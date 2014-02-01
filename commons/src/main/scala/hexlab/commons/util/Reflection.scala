@@ -23,6 +23,11 @@
 package hexlab.commons.util
 
 import scala.reflect.runtime.universe._
+import java.util.jar.JarInputStream
+import java.io.{File, IOException, FileInputStream}
+import scala.collection.mutable.ArrayBuffer
+import scala.Predef._
+import scala.Some
 
 /**
  * This class provides simplified look on Scala Reflection
@@ -30,6 +35,71 @@ import scala.reflect.runtime.universe._
  * @author hex1r0
  */
 object Reflection {
+
+  // ---------------------------------
+
+  // TODO need to rework these methods
+  def parsePackage(parent: Class[_], packageName: String): Stream[Class[_]] = {
+    val runtime: String = parent.getProtectionDomain.getCodeSource.getLocation.getFile
+    if (runtime.endsWith(".jar"))
+      parseJarFile2(runtime, packageName)
+    else
+      parseClassDir2(new File(runtime + packageName.replace('.', '/')), packageName).toStream
+  }
+
+  def parseJarFile2(jar: String, packageName: String): Stream[Class[_]] = {
+    val packageName0 = packageName.replace('.', '/')
+    var jarFile: JarInputStream = null
+    try {
+      jarFile = new JarInputStream(new FileInputStream(jar))
+      val entries = new ArrayBuffer[Class[_]]
+      var jarEntry = jarFile.getNextJarEntry
+      while (jarEntry != null) {
+        var className: String = jarEntry.getName
+        if (className.endsWith(".class")) {
+          className = className.take(className.length - ".class".length)
+          if (className.startsWith(packageName0)) {
+            loadClass2(className.replace('/', '.')).foreach(entries +=)
+          }
+        }
+        jarEntry = jarFile.getNextJarEntry
+      }
+      entries.toStream
+    } catch {
+      case e: IOException => e.
+        printStackTrace()
+        Stream.empty
+    } finally {
+      try if (jarFile != null) jarFile.close()
+      catch {
+        case e: IOException => e.printStackTrace()
+      }
+    }
+  }
+
+  private def parseClassDir2(dir: File, packageName: String): ArrayBuffer[Class[_]] = {
+    val entries = new ArrayBuffer[Class[_]]
+    for (file <- dir.listFiles) {
+      if (file.isDirectory)
+        entries ++= parseClassDir2(file, packageName + "." + file.getName)
+      else if (file.getName.endsWith(".class"))
+        loadClass2(packageName + '.' + file.getName.take(file.getName.length - ".class".length)).foreach(entries +=)
+    }
+    entries
+  }
+
+  private def loadClass2(name: String): Option[Class[_]] = {
+    try {
+      Some(Class.forName(name))
+    } catch {
+      case e: ClassNotFoundException =>
+        e.printStackTrace()
+        None
+    }
+  }
+
+  // ---------------------------------
+
   def findClassAnnotation[T: TypeTag](clazz: Class[_]): Option[T] = {
     val m = runtimeMirror(getClass.getClassLoader)
     findClassAnnotation[T](m, clazz)

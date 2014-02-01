@@ -23,9 +23,10 @@
 package hexlab.commons.util
 
 import scala.annotation.StaticAnnotation
-import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.universe._
 import com.typesafe.config.{ConfigFactory => TSConfigFactory}
 import scala.reflect.ClassTag
+import java.io.File
 
 /**
  * This is set of classes for configuration support
@@ -37,7 +38,9 @@ case class Config(path: String) extends StaticAnnotation
 case class ConfigProperty(path: String, default: String /* = ""*/) extends StaticAnnotation
 
 object Config {
-  def apply[T: ClassTag](m: ru.Mirror, clazz: Class[T]): Option[T] = {
+  private val _log = Log[Config.type]
+
+  def load[T: ClassTag](root: String, m: Mirror, clazz: Class[T]): Option[T] = {
     for (configAnnotation <- Reflection.findClassAnnotation[Config](m, clazz)) yield {
       val props = Reflection.findAnnotatedClassFields[ConfigProperty](m, clazz)
       if (props.isEmpty) return None
@@ -49,41 +52,46 @@ object Config {
         case (a, f) => (a, instanceMirror.reflectField(f))
       }
 
-      val configPath = configAnnotation.path
-      val config = TSConfigFactory.load(configPath)
+      val configPath = root + "/" + configAnnotation.path
+      val configFile = new File(configPath)
+      if (configFile.isFile && configFile.exists()) {
+        _log.info(s"Loading config `$configPath`")
 
-      def setValue(f: ru.FieldMirror, value0: String) {
-        implicit val value = value0
-        val tn = f.symbol.typeSignature.toString
-
-        def numeric[R](f: (String) => R)(implicit d: String): R = if (d == "") f("0") else f(d)
-
-        // FIXME temp solution
-        f.set(tn match {
-          case "Boolean" => numeric(_.toBoolean)(value match {
-            case "0" => "false"
-            case "1" => "true"
-            case x => x.toString
-          })
-          case "Byte" => numeric(_.toByte)
-          case "Short" => numeric(_.toShort)
-          case "Int" => numeric(_.toInt)
-          case "Long" => numeric(_.toLong)
-          case "Float" => numeric(_.toFloat)
-          case "Double" => numeric(_.toDouble)
-          case "String" => value
-          case _ => throw new NotImplementedError(tn + " is not supported yet")
-        })
+        val config = TSConfigFactory.parseFile(configFile)
+        fields.foreach {
+          case (annot, prop) =>
+            val propPath = annot.path
+            if (config.hasPath(propPath)) bindValue(prop, config.getString(propPath))
+            else bindValue(prop, annot.default)
+        }
+      } else {
+        _log.info(s"Loading unexisting config `$configPath` failed")
       }
-
-      fields.foreach {
-        case (annot, prop) =>
-          val propPath = annot.path
-          if (config.hasPath(propPath)) setValue(prop, config.getString(propPath))
-          else setValue(prop, annot.default)
-      }
-
       instance
     }
+  }
+
+  private def bindValue(f: FieldMirror, value0: String) {
+    implicit val value = value0
+    val tn = f.symbol.typeSignature.toString
+
+    def numeric[R](f: (String) => R)(implicit d: String): R = if (d == "") f("0") else f(d)
+
+    // FIXME temp solution
+    f.set(tn match {
+      case "Boolean" => numeric(_.toBoolean)(value match {
+        case "0" => "false"
+        case "1" => "true"
+        case x => x.toString
+      })
+      case "Byte" => numeric(_.toByte)
+      case "Short" => numeric(_.toShort)
+      case "Int" => numeric(_.toInt)
+      case "Long" => numeric(_.toLong)
+      case "Float" => numeric(_.toFloat)
+      case "Double" => numeric(_.toDouble)
+      case "String" => value
+      case _ => throw new NotImplementedError(tn + " is not supported yet")
+    })
   }
 }

@@ -22,15 +22,20 @@
 
 package hexlab.commons.util
 
-import org.slf4j.LoggerFactory
-import scala.reflect.ClassTag
+import hexlab.commons.util.Reflection._
 
 /**
  * This class ...
  *
  * @author hex1r0
  */
-object Log {
-  def apply[T: ClassTag] = LoggerFactory.getLogger(GenericsClass[T])
-  def apply(name: String) = LoggerFactory.getLogger(name)
+object ConfigFactory {
+  def loadAllFrom(root: String, parent: Class[_], packageName: String) = {
+    val m = scala.reflect.runtime.universe.runtimeMirror(ConfigFactory.getClass.getClassLoader)
+    val all = parsePackage(parent, packageName) map {
+      clazz => Config.load(root, m, clazz)
+    }
+
+    all.flatten
+  }
 }

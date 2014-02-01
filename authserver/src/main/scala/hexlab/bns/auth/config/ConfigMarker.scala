@@ -20,15 +20,11 @@
  *                           All rights reserved
  */
 
-package bns
+package hexlab.bns.auth.config
 
 /**
- * This class is an AuthServer entry point
+ * This class ...
  *
  * @author hex1r0
  */
-object AuthServer {
-  def main(args: Array[String]) {
-
-  }
-}
+final class ConfigMarker

@@ -30,7 +30,7 @@
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>play.bns</groupId>
+    <groupId>hexlab.bns</groupId>
     <artifactId>main</artifactId>
     <version>0.1</version>
     <relativePath>../main/pom.xml</relativePath>

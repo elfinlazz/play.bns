@@ -29,7 +29,7 @@
   <url>https://github.com/HeXLaB/play.bns</url>
   <packaging>pom</packaging>
 
-  <groupId>play.bns</groupId>
+  <groupId>hexlab.bns</groupId>
   <artifactId>main</artifactId>
   <version>0.1</version>
 
