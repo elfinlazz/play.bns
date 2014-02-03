@@ -18,11 +18,16 @@ Technologies used
 * Akka http://akka.io/
 * Slick http://slick.typesafe.com/
 * Logback http://logback.qos.ch/
-* 
 
+Contact us
+========
+* XMPP(Jabber)
+ * server: jabber.me
+ * conference server: muc.jabber.me
+ * room: play.bns
 
-
-
+Disclaimer
+========
 
 
                                Blade & Soul® is registered trademark of NCsoft Corporation.
