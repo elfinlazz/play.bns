@@ -22,13 +22,12 @@
 
 package hexlab.commons.util
 
-import scala.collection.mutable
 import akka.actor.{ActorSystem, ActorRef, Actor}
-import scala.reflect.ClassTag
 import hexlab.commons.util.MessageExecutor._
-import hexlab.commons.util.MessageExecutor.RequestFailed
-import hexlab.commons.util.MessageExecutor.RequestSucceed
 import java.util.concurrent.{ScheduledExecutorService, ScheduledFuture, TimeUnit}
+import scala.collection.mutable
+import scala.reflect.ClassTag
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * This class ...
@@ -45,11 +44,15 @@ object MessageExecutor {
   type TaskWithId = (TaskId) => Unit
 
   case class SubscribeFunc(clazz: Class[_], instance: MessageHandler, func: MessageFunc[_])
-  case class RequestObj(message: Any, onSuccess: SuccessFunc[Any], onError: FailureFunc)
-  case class RequestSucceed(result: AnyRef, onSuccess: (AnyRef) => Unit)
-  case class RequestFailed(e: Throwable, onFailure: (Throwable) => Unit)
+  case class SendRequest(target: ActorRef, arg: Any, onSuccess: SuccessFunc[Any], onFailure: FailureFunc)
+  case class DoRequest(id: Int, message: Any)
+  case class RequestSucceed(id: Int, result: AnyRef)
+  case class RequestFailed(id: Int, e: Throwable)
   case class RunScheduledTask(task: Task)
   case class RunScheduledTaskWithId(taskId: TaskId, task: TaskWithId)
+  case class NewExecutorTransactionStart(newExecutor: ActorRef)
+  case class CommitNewExecutor(actor: ActorRef, newExecutor: ActorRef)
+  case class NewExecutorTransactionEnd(newExecutor: ActorRef)
 
   trait MessageHandler {
 
@@ -62,13 +65,13 @@ object MessageExecutor {
 
     def activeMessage = _activeMessage
 
-    protected final def subscribe[T: ClassTag](f: MessageFunc[T]) {
+    protected final def bind[T: ClassTag](f: MessageFunc[T]) {
       executor ! SubscribeFunc(GenericsClass[T], this, f.asInstanceOf[MessageFunc[T]])
     }
 
-    protected final def request[T](ref: ActorRef, arg: AnyRef)
+    protected final def request[T](target: ActorRef, arg: AnyRef)
                                   (onSuccess: SuccessFunc[T], onFailure: FailureFunc = defaultOnFailure) {
-      ref.tell(RequestObj(arg, onSuccess.asInstanceOf[SuccessFunc[Any]], onFailure), executor)
+      executor ! SendRequest(target, arg, onSuccess.asInstanceOf[SuccessFunc[Any]], onFailure)
     }
 
     def task(taskId: TaskId) = {
@@ -138,10 +141,25 @@ class MessageExecutor extends Actor {
   private val _handlers = new mutable.HashMap[Class[_], (MessageHandler, MessageFunc[_])]
   private val _unhandled = (UnhandledMessageHandler, UnhandledMessageHandler.unhandledMessage _)
 
+  private val _requests = new mutable.HashMap[Int, (SuccessFunc[Any], FailureFunc)]
+  private var _nextRequestId = 0
+
   override def receive: Actor.Receive = {
-    case RequestSucceed(result, func) => func(result)
-    case RequestFailed(e, func) => func(e)
-    case SubscribeFunc(clazz, instance, func) => _handlers += clazz ->(instance, func)
+    case SendRequest(target, arg, onSuccess, onFailure) =>
+      _nextRequestId += 1
+      _requests += _nextRequestId ->(onSuccess, onFailure)
+
+      target ! DoRequest(_nextRequestId, arg)
+
+    case RequestSucceed(id, result) =>
+      _requests.remove(id) foreach (_._1(result))
+
+    case RequestFailed(id, e) =>
+      _requests.remove(id) foreach (_._1(e))
+
+    case SubscribeFunc(clazz, instance, func) =>
+      _handlers += clazz ->(instance, func)
+
     case RunScheduledTask(task) =>
       try task()
       catch {
@@ -154,18 +172,21 @@ class MessageExecutor extends Actor {
         case e: Throwable => defaultOnFailure(e)
       }
 
-    case RequestObj(m, onSuccess, onError) =>
+    case DoRequest(id, m) =>
       val (handler, func) = _handlers.getOrElse(m.getClass, _unhandled)
       //handler.executorActor = this
       handler._activeMessage = m
       try {
         func.asInstanceOf[MessageFunc[Any]](m) match {
-          case v: AnyRef => sender ! RequestSucceed(v, onSuccess)
+          case v: AnyRef => sender ! RequestSucceed(id, v)
           case _ =>
         }
       } catch {
-        case e: Throwable => sender ! RequestFailed(e, onError)
+        case e: Throwable => sender ! RequestFailed(id, e)
       }
+
+    case CommitNewExecutor(actor, newExecutor) =>
+      actor ! NewExecutorTransactionEnd(newExecutor)
 
     // this case should be the last
     case m: AnyRef =>
@@ -178,3 +199,36 @@ class MessageExecutor extends Actor {
       }
   }
 }
+
+trait Executable[T] {
+  private var _enquenedMessages = new ArrayBuffer[T]
+  protected var _executor: ActorRef = _
+  protected var _submit: (T) => Unit = send
+
+  def transactionHandler: Actor.Receive = {
+    case NewExecutorTransactionStart(newExecutor) =>
+      if (_executor == null) {
+        _executor = newExecutor
+      } else {
+        _submit = enqueue
+        _executor ! CommitNewExecutor(selfRef, newExecutor)
+      }
+
+    case NewExecutorTransactionEnd(newExecutor) =>
+      _executor = newExecutor
+      _submit = send
+      _enquenedMessages foreach _submit
+      _enquenedMessages.clear()
+  }
+
+  private def send(m: T) {
+    _executor ! m
+  }
+
+  private def enqueue(m: T) {
+    _enquenedMessages += m
+  }
+
+  def selfRef: ActorRef
+}
+
